@@ -2,90 +2,115 @@
 
 ## 系统架构
 
-```mermaid
-flowchart TD
-    A[用户浏览器] --> B[Nginx - 管理后台 :8081]
-    A --> C[Nginx - 用户端 :8082]
-    B --> D[Spring Boot API :8080]
-    C --> D
-    D --> E[MySQL 8.0 :3306]
-    D --> F[JWT 认证]
-    D --> G[AOP 操作日志]
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        用户浏览器                            │
+└─────────────────────────────────────────────────────────────┘
+                    │                       │
+                    ▼                       ▼
+┌─────────────────────────┐   ┌─────────────────────────┐
+│  Nginx - 管理后台 :8081  │   │  Nginx - 用户端 :8082   │
+└─────────────────────────┘   └─────────────────────────┘
+                    │                       │
+                    └───────────┬───────────┘
+                                ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  Spring Boot API :8080                       │
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────────────┐ │
+│  │JWT 认证 │  │AOP 日志 │  │拦截器   │  │全局异常处理     │ │
+│  └─────────┘  └─────────┘  └─────────┘  └─────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     MySQL 8.0 :3306                          │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ## ER 图
 
-```mermaid
-erDiagram
-    SYS_USER {
-        bigint id PK
-        varchar username UK
-        varchar password
-        varchar nickname
-        varchar email
-        varchar avatar
-        varchar role
-        tinyint status
-        datetime created_at
-        datetime updated_at
-    }
-    CATEGORY {
-        bigint id PK
-        varchar name
-        varchar description
-        int sort_order
-        tinyint status
-        datetime created_at
-        datetime updated_at
-    }
-    ARTICLE {
-        bigint id PK
-        varchar title
-        varchar summary
-        text content
-        varchar cover_image
-        bigint category_id FK
-        bigint user_id FK
-        varchar status
-        int view_count
-        datetime created_at
-        datetime updated_at
-    }
-    OPERATION_LOG {
-        bigint id PK
-        bigint user_id
-        varchar username
-        varchar operation
-        varchar method
-        text params
-        varchar ip
-        datetime created_at
-    }
-    SYS_USER ||--o{ ARTICLE : "撰写"
-    CATEGORY ||--o{ ARTICLE : "归属"
-    SYS_USER ||--o{ OPERATION_LOG : "产生"
+```
+┌──────────────────┐       ┌──────────────────┐
+│    SYS_USER      │       │    CATEGORY      │
+├──────────────────┤       ├──────────────────┤
+│ id (PK)          │       │ id (PK)          │
+│ username (UK)    │       │ name             │
+│ password         │       │ description      │
+│ nickname (UK)    │       │ sort_order       │
+│ email            │       │ status           │
+│ avatar           │       │ created_at       │
+│ role             │       │ updated_at       │
+│ status           │       └────────┬─────────┘
+│ created_at       │                │
+│ updated_at       │                │ 1:N
+└────────┬─────────┘                │
+         │                          │
+         │ 1:N                      │
+         │                          │
+         ▼                          ▼
+┌──────────────────────────────────────────────┐
+│                  ARTICLE                      │
+├──────────────────────────────────────────────┤
+│ id (PK)                                       │
+│ title                                         │
+│ summary                                       │
+│ content                                       │
+│ cover_image                                   │
+│ category_id (FK) ─────────────────────────────┘
+│ user_id (FK) ─────────────────────────────────┐
+│ status (DRAFT/PENDING/PUBLISHED/REJECTED)     │
+│ view_count                                    │
+│ created_at                                    │
+│ updated_at                                    │
+└──────────────────────────────────────────────┘
+
+┌──────────────────┐
+│  OPERATION_LOG   │
+├──────────────────┤
+│ id (PK)          │
+│ user_id          │
+│ username         │
+│ operation        │
+│ method           │
+│ params           │
+│ ip               │
+│ created_at       │
+└──────────────────┘
 ```
 
 ## 接口清单
 
 ### AuthController (`/api/auth`)
+
 | 方法 | 路径 | 说明 | 认证 |
 |------|------|------|------|
 | POST | /login | 用户登录 | 否 |
-| POST | /register | 用户注册（用户名/昵称不可重复，邮箱格式校验） | 否 |
+| POST | /register | 用户注册 | 否 |
 | GET | /info | 获取当前用户信息 | 是 |
 | POST | /logout | 用户退出 | 是 |
 
-### ArticleController (`/api/admin/article`)
+### ArticleController (`/api/admin/article`) - 管理端
+
 | 方法 | 路径 | 说明 | 认证 |
 |------|------|------|------|
 | GET | /list | 文章列表（分页） | 是 |
 | GET | /{id} | 文章详情 | 是 |
 | POST | /save | 创建/更新文章 | 是 |
 | DELETE | /{id} | 删除文章 | 是 |
-| PUT | /{id}/status | 更新文章状态 | 是 |
+| PUT | /{id}/status | 审核文章（发布/拒绝） | 是 |
+
+### UserArticleController (`/api/user/article`) - 用户端
+
+| 方法 | 路径 | 说明 | 认证 |
+|------|------|------|------|
+| GET | /my | 我的文章列表 | 是 |
+| GET | /{id} | 文章详情 | 是 |
+| POST | /save | 创建/更新文章 | 是 |
+| POST | /{id}/submit | 提交审核 | 是 |
+| DELETE | /{id} | 删除文章 | 是 |
 
 ### CategoryController (`/api/admin/category`)
+
 | 方法 | 路径 | 说明 | 认证 |
 |------|------|------|------|
 | GET | /list | 分类列表 | 是 |
@@ -93,6 +118,7 @@ erDiagram
 | DELETE | /{id} | 删除分类 | 是 |
 
 ### UserController (`/api/admin/user`)
+
 | 方法 | 路径 | 说明 | 认证 |
 |------|------|------|------|
 | GET | /list | 用户列表（分页） | 是 |
@@ -101,27 +127,85 @@ erDiagram
 | PUT | /profile | 更新个人信息 | 是 |
 
 ### OperationLogController (`/api/admin/log`)
+
 | 方法 | 路径 | 说明 | 认证 |
 |------|------|------|------|
 | GET | /list | 操作日志列表（分页） | 是 |
 
-### PublicController (`/api/public`)
+### PublicController (`/api/public`) - 公开接口
+
 | 方法 | 路径 | 说明 | 认证 |
 |------|------|------|------|
 | GET | /articles | 已发布文章列表 | 否 |
-| GET | /articles/{id} | 文章详情 | 否 |
-| GET | /categories | 分类列表 | 否 |
+| GET | /articles/{id} | 文章详情（增加浏览量） | 否 |
+| GET | /categories | 启用的分类列表 | 否 |
+
+## 文章状态流转
+
+```
+用户创建文章
+     │
+     ▼
+┌─────────┐    用户提交    ┌─────────┐
+│  DRAFT  │ ─────────────▶ │ PENDING │
+│  草稿   │                │ 待审核  │
+└─────────┘                └────┬────┘
+     ▲                          │
+     │                    管理员审核
+     │                    ┌─────┴─────┐
+     │                    ▼           ▼
+     │            ┌───────────┐ ┌───────────┐
+     │            │ PUBLISHED │ │ REJECTED  │
+     │            │  已发布   │ │  已拒绝   │
+     │            └───────────┘ └─────┬─────┘
+     │                                │
+     └────────────────────────────────┘
+              用户重新编辑
+```
+
+## 角色权限
+
+| 功能 | 管理员 (ADMIN) | 普通用户 (USER) |
+|------|----------------|-----------------|
+| 查看已发布文章 | ✓ | ✓ |
+| 写作文章 | ✓ | ✓ |
+| 管理自己的文章 | ✓ | ✓ |
+| 审核文章 | ✓ | ✗ |
+| 管理所有文章 | ✓ | ✗ |
+| 管理分类 | ✓ | ✗ |
+| 管理用户 | ✓ | ✗ |
+| 查看操作日志 | ✓ | ✗ |
 
 ## UI/UX 规范
 
-| 属性 | 值 |
-|------|------|
-| 主色调 | #667eea (管理端) / #2d8cf0 (用户端) |
-| 辅助色 | #764ba2 |
-| 背景色 | #f5f7fa |
-| 卡片背景 | #ffffff |
-| 文字主色 | #303133 |
-| 文字辅色 | #909399 |
-| 卡片圆角 | 12px |
-| 基础间距 | 8px / 16px / 24px |
-| 字体 | -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif |
+| 属性 | 管理端 | 用户端 |
+|------|--------|--------|
+| 主色调 | #667eea | #2d8cf0 |
+| 辅助色 | #764ba2 | #764ba2 |
+| 背景色 | #f5f7fa | #f5f7fa |
+| 卡片背景 | #ffffff | #ffffff |
+| 文字主色 | #303133 | #303133 |
+| 文字辅色 | #909399 | #909399 |
+| 卡片圆角 | 12px | 12px |
+| 基础间距 | 8px / 16px / 24px | 8px / 16px / 24px |
+
+## 技术实现
+
+### 认证机制
+
+- 使用 JWT Token 进行身份认证
+- Token 存储在 localStorage
+- 请求头携带 `Authorization: Bearer <token>`
+- 拦截器统一校验 Token 有效性
+
+### 操作日志
+
+- 使用 AOP 切面 + 自定义注解 `@Log`
+- 记录操作人、操作类型、请求参数、IP 地址
+- 异步写入数据库，不影响主流程
+
+### 异常处理
+
+- 全局异常处理器统一捕获异常
+- 业务异常返回友好提示
+- 系统异常记录日志并返回通用错误信息

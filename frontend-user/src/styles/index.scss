@@ -1,15 +1,18 @@
 :root {
-  --primary-color: #2d8cf0;
-  --primary-light: #57a3f3;
-  --primary-dark: #1a6dd1;
-  --bg-color: #f4f5f7;
+  --primary-color: #409eff;
+  --primary-light: #66b1ff;
+  --primary-dark: #3a8ee6;
+  --bg-color: #f0f2f5;
   --card-bg: #ffffff;
-  --text-primary: #2c3e50;
-  --text-secondary: #7f8c8d;
-  --text-muted: #bdc3c7;
-  --border-color: #e8eaed;
-  --shadow: 0 2px 16px rgba(0, 0, 0, 0.05);
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+  --border-color: #e5e7eb;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   --radius: 12px;
+  --radius-lg: 16px;
 }
 
 * {
@@ -18,16 +21,36 @@
   box-sizing: border-box;
 }
 
+html, body, #app {
+  height: 100%;
+  min-height: 100vh;
+}
+
 body {
-  background-color: var(--bg-color);
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
   color: var(--text-primary);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   line-height: 1.6;
 }
 
 a {
   text-decoration: none;
   color: inherit;
+}
+
+// 滚动条美化
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+  &:hover { background: #a8a8a8; }
 }
 
 // Element Plus 主题覆盖
@@ -40,7 +63,19 @@ a {
   --el-button-active-border-color: var(--primary-dark);
 }
 
+.el-tag {
+  border-radius: 6px;
+}
+
 // 弹框内容间距
+.el-dialog {
+  border-radius: var(--radius) !important;
+}
 .el-dialog__body {
   padding-top: 24px !important;
+}
+
+// 分页器美化
+.el-pagination.is-background .el-pager li:not(.is-disabled).is-active {
+  background-color: var(--primary-color);
 }

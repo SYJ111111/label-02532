@@ -12,14 +12,18 @@ export function getArticleDetail(id) {
   return request.get(`/admin/article/${id}`)
 }
 
-export function saveArticle(data) {
-  return request.post('/admin/article/save', data)
+export function approveArticle(id) {
+  return request.put(`/admin/article/${id}/approve`)
+}
+
+export function rejectArticle(id) {
+  return request.put(`/admin/article/${id}/reject`)
+}
+
+export function offlineArticle(id) {
+  return request.put(`/admin/article/${id}/offline`)
 }
 
 export function deleteArticle(id) {
   return request.delete(`/admin/article/${id}`)
-}
-
-export function updateArticleStatus(id, status) {
-  return request.put(`/admin/article/${id}/status`, null, { params: { status } })
 }

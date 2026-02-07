@@ -19,9 +19,7 @@
         <el-table-column prop="authorName" label="作者" width="100" />
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'PUBLISHED' ? 'success' : 'info'" size="small">
-              {{ row.status === 'PUBLISHED' ? '已发布' : '草稿' }}
-            </el-tag>
+            <el-tag :type="statusType(row.status)" size="small">{{ statusText(row.status) }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="viewCount" label="浏览量" width="80" align="center" />
@@ -36,6 +34,7 @@ import { ref, onMounted, computed } from 'vue'
 import { getArticleList, getStats } from '@/api/article'
 
 const articleTotal = ref(0)
+const pendingTotal = ref(0)
 const categoryTotal = ref(0)
 const userTotal = ref(0)
 const totalViews = ref(0)
@@ -44,7 +43,7 @@ const tableLoading = ref(false)
 
 const statCards = computed(() => [
   { label: '文章总数', value: articleTotal.value, icon: 'Document', bg: 'linear-gradient(135deg, #667eea, #764ba2)' },
-  { label: '分类总数', value: categoryTotal.value, icon: 'FolderOpened', bg: 'linear-gradient(135deg, #f093fb, #f5576c)' },
+  { label: '待审核', value: pendingTotal.value, icon: 'Timer', bg: 'linear-gradient(135deg, #f093fb, #f5576c)' },
   { label: '用户总数', value: userTotal.value, icon: 'User', bg: 'linear-gradient(135deg, #4facfe, #00f2fe)' },
   { label: '总浏览量', value: totalViews.value, icon: 'View', bg: 'linear-gradient(135deg, #43e97b, #38f9d7)' }
 ])
@@ -57,6 +56,7 @@ onMounted(async () => {
       getArticleList({ pageNum: 1, pageSize: 10 })
     ])
     articleTotal.value = statsRes.data.articleCount
+    pendingTotal.value = statsRes.data.pendingCount
     categoryTotal.value = statsRes.data.categoryCount
     userTotal.value = statsRes.data.userCount
     totalViews.value = statsRes.data.totalViews
@@ -67,6 +67,16 @@ onMounted(async () => {
     tableLoading.value = false
   }
 })
+
+function statusType(status) {
+  const map = { DRAFT: 'info', PENDING: 'warning', PUBLISHED: 'success', REJECTED: 'danger' }
+  return map[status] || 'info'
+}
+
+function statusText(status) {
+  const map = { DRAFT: '草稿', PENDING: '待审核', PUBLISHED: '已发布', REJECTED: '已拒绝' }
+  return map[status] || status
+}
 </script>
 
 <style lang="scss" scoped>

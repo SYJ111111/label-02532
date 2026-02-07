@@ -89,6 +89,37 @@ body {
   }
 }
 
+// 文章操作确认弹框样式
+.article-confirm-box {
+  .el-message-box__message {
+    .confirm-content {
+      text-align: center;
+      padding: 8px 0;
+      
+      .confirm-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+        line-height: 1.5;
+      }
+      
+      .confirm-info {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-bottom: 12px;
+      }
+      
+      .confirm-msg {
+        font-size: 14px;
+        color: var(--text-primary);
+        margin: 0;
+        line-height: 1.6;
+      }
+    }
+  }
+}
+
 // 响应式
 @media screen and (max-width: 768px) {
   .content-card {

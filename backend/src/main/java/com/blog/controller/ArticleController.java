@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.blog.annotation.Log;
 import com.blog.common.Constants;
 import com.blog.common.Result;
-import com.blog.dto.ArticleDTO;
 import com.blog.dto.ArticleQueryDTO;
 import com.blog.entity.Article;
 import com.blog.entity.Category;
@@ -15,8 +14,6 @@ import com.blog.service.ArticleService;
 import com.blog.service.CategoryService;
 import com.blog.service.UserService;
 import com.blog.vo.ArticleVO;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,6 +35,8 @@ public class ArticleController {
         long articleCount = articleService.count();
         long publishedCount = articleService.count(
                 new LambdaQueryWrapper<Article>().eq(Article::getStatus, Constants.ARTICLE_STATUS_PUBLISHED));
+        long pendingCount = articleService.count(
+                new LambdaQueryWrapper<Article>().eq(Article::getStatus, Constants.ARTICLE_STATUS_PENDING));
         long categoryCount = categoryService.count();
         long userCount = userService.count();
         List<Article> allArticles = articleService.list(
@@ -47,6 +46,7 @@ public class ArticleController {
         return Result.success(Map.of(
                 "articleCount", articleCount,
                 "publishedCount", publishedCount,
+                "pendingCount", pendingCount,
                 "categoryCount", categoryCount,
                 "userCount", userCount,
                 "totalViews", totalViews
@@ -60,6 +60,7 @@ public class ArticleController {
                 .like(query.getTitle() != null && !query.getTitle().isEmpty(), Article::getTitle, query.getTitle())
                 .eq(query.getCategoryId() != null, Article::getCategoryId, query.getCategoryId())
                 .eq(query.getStatus() != null && !query.getStatus().isEmpty(), Article::getStatus, query.getStatus())
+                .ne(query.getStatus() == null || query.getStatus().isEmpty(), Article::getStatus, Constants.ARTICLE_STATUS_DRAFT)
                 .orderByDesc(Article::getCreatedAt);
         Page<Article> result = articleService.page(page, wrapper);
         List<ArticleVO> voList = convertToVOList(result.getRecords());
@@ -75,28 +76,48 @@ public class ArticleController {
         return Result.success(convertToVO(article));
     }
 
-    @Log("保存文章")
-    @PostMapping("/save")
-    public Result<Void> save(@Valid @RequestBody ArticleDTO dto, HttpServletRequest request) {
-        Long userId = (Long) request.getAttribute("userId");
-        Article article;
-        if (dto.getId() != null) {
-            article = articleService.getById(dto.getId());
-            if (article == null) {
-                throw new BusinessException("文章不存在");
-            }
-        } else {
-            article = new Article();
-            article.setViewCount(0);
+    @Log("审核通过文章")
+    @PutMapping("/{id}/approve")
+    public Result<Void> approve(@PathVariable Long id) {
+        Article article = articleService.getById(id);
+        if (article == null) {
+            throw new BusinessException("文章不存在");
         }
-        article.setTitle(dto.getTitle());
-        article.setSummary(dto.getSummary());
-        article.setContent(dto.getContent());
-        article.setCoverImage(dto.getCoverImage());
-        article.setCategoryId(dto.getCategoryId());
-        article.setUserId(userId);
-        article.setStatus(dto.getStatus() != null ? dto.getStatus() : Constants.ARTICLE_STATUS_DRAFT);
-        articleService.saveOrUpdate(article);
+        if (!Constants.ARTICLE_STATUS_PENDING.equals(article.getStatus())) {
+            throw new BusinessException("只有待审核的文章可以审核通过");
+        }
+        article.setStatus(Constants.ARTICLE_STATUS_PUBLISHED);
+        articleService.updateById(article);
+        return Result.success();
+    }
+
+    @Log("拒绝文章")
+    @PutMapping("/{id}/reject")
+    public Result<Void> reject(@PathVariable Long id) {
+        Article article = articleService.getById(id);
+        if (article == null) {
+            throw new BusinessException("文章不存在");
+        }
+        if (!Constants.ARTICLE_STATUS_PENDING.equals(article.getStatus())) {
+            throw new BusinessException("只有待审核的文章可以拒绝");
+        }
+        article.setStatus(Constants.ARTICLE_STATUS_REJECTED);
+        articleService.updateById(article);
+        return Result.success();
+    }
+
+    @Log("下架文章")
+    @PutMapping("/{id}/offline")
+    public Result<Void> offline(@PathVariable Long id) {
+        Article article = articleService.getById(id);
+        if (article == null) {
+            throw new BusinessException("文章不存在");
+        }
+        if (!Constants.ARTICLE_STATUS_PUBLISHED.equals(article.getStatus())) {
+            throw new BusinessException("只有已发布的文章可以下架");
+        }
+        article.setStatus(Constants.ARTICLE_STATUS_DRAFT);
+        articleService.updateById(article);
         return Result.success();
     }
 
@@ -104,18 +125,6 @@ public class ArticleController {
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable Long id) {
         articleService.removeById(id);
-        return Result.success();
-    }
-
-    @Log("更新文章状态")
-    @PutMapping("/{id}/status")
-    public Result<Void> updateStatus(@PathVariable Long id, @RequestParam String status) {
-        Article article = articleService.getById(id);
-        if (article == null) {
-            throw new BusinessException("文章不存在");
-        }
-        article.setStatus(status);
-        articleService.updateById(article);
         return Result.success();
     }
 

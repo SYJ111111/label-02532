@@ -1,28 +1,37 @@
 <template>
   <div class="auth-page">
     <div class="auth-card">
-      <h2>注册</h2>
-      <p class="auth-desc">创建您的博客账号</p>
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="0" size="large">
+      <div class="auth-header">
+        <div class="auth-icon">
+          <el-icon :size="32"><UserFilled /></el-icon>
+        </div>
+        <h2>创建账号</h2>
+        <p>注册成为博客用户</p>
+      </div>
+      <el-form ref="formRef" :model="form" :rules="rules" size="large" @submit.prevent="handleRegister">
         <el-form-item prop="username">
-          <el-input v-model="form.username" prefix-icon="User" placeholder="请输入用户名（3-20个字符）" />
-        </el-form-item>
-        <el-form-item prop="password">
-          <el-input v-model="form.password" prefix-icon="Lock" type="password" placeholder="请输入密码（6-20个字符）" show-password />
+          <el-input v-model="form.username" placeholder="用户名" prefix-icon="User" />
         </el-form-item>
         <el-form-item prop="nickname">
-          <el-input v-model="form.nickname" prefix-icon="UserFilled" placeholder="请输入昵称（2-30个字符）" />
+          <el-input v-model="form.nickname" placeholder="昵称" prefix-icon="Avatar" />
         </el-form-item>
         <el-form-item prop="email">
-          <el-input v-model="form.email" prefix-icon="Message" placeholder="请输入邮箱（选填）" />
+          <el-input v-model="form.email" placeholder="邮箱（选填）" prefix-icon="Message" />
+        </el-form-item>
+        <el-form-item prop="password">
+          <el-input v-model="form.password" type="password" placeholder="密码" prefix-icon="Lock" show-password />
+        </el-form-item>
+        <el-form-item prop="confirmPassword">
+          <el-input v-model="form.confirmPassword" type="password" placeholder="确认密码" prefix-icon="Lock" show-password />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" class="auth-btn" :loading="loading" @click="handleRegister">注 册</el-button>
+          <el-button type="primary" :loading="loading" native-type="submit" class="submit-btn">
+            注册
+          </el-button>
         </el-form-item>
       </el-form>
       <div class="auth-footer">
-        <span>已有账号？</span>
-        <router-link to="/login">去登录</router-link>
+        已有账号？<router-link to="/login">立即登录</router-link>
       </div>
     </div>
   </div>
@@ -37,24 +46,50 @@ import { ElMessage } from 'element-plus'
 const router = useRouter()
 const formRef = ref()
 const loading = ref(false)
-const form = reactive({ username: '', password: '', nickname: '', email: '' })
-const rules = {
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }, { min: 3, max: 20, message: '用户名长度为3-20个字符', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }, { min: 6, max: 20, message: '密码长度为6-20个字符', trigger: 'blur' }],
-  nickname: [{ required: true, message: '请输入昵称', trigger: 'blur' }, { min: 2, max: 30, message: '昵称长度为2-30个字符', trigger: 'blur' }],
-  email: [{ type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }]
+
+const form = reactive({ username: '', nickname: '', email: '', password: '', confirmPassword: '' })
+
+const validateConfirm = (rule, value, callback) => {
+  if (value !== form.password) {
+    callback(new Error('两次输入的密码不一致'))
+  } else {
+    callback()
+  }
 }
 
-const handleRegister = async () => {
+const rules = {
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 3, max: 20, message: '用户名长度为3-20个字符', trigger: 'blur' }
+  ],
+  nickname: [
+    { required: true, message: '请输入昵称', trigger: 'blur' },
+    { min: 2, max: 30, message: '昵称长度为2-30个字符', trigger: 'blur' }
+  ],
+  email: [{ type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, max: 20, message: '密码长度为6-20个字符', trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { required: true, message: '请确认密码', trigger: 'blur' },
+    { validator: validateConfirm, trigger: 'blur' }
+  ]
+}
+
+async function handleRegister() {
   const valid = await formRef.value.validate().catch(() => false)
   if (!valid) return
   loading.value = true
   try {
-    await registerApi(form)
+    await registerApi({
+      username: form.username,
+      nickname: form.nickname,
+      email: form.email,
+      password: form.password
+    })
     ElMessage.success('注册成功，请登录')
     router.push('/login')
-  } catch {
-    // handled by interceptor
   } finally {
     loading.value = false
   }
@@ -63,36 +98,71 @@ const handleRegister = async () => {
 
 <style lang="scss" scoped>
 .auth-page {
+  min-height: calc(100vh - 200px);
   display: flex;
+  align-items: center;
   justify-content: center;
-  padding: 48px 24px;
+  padding: 40px 20px;
 }
 .auth-card {
   width: 100%;
   max-width: 420px;
   background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-  padding: 40px;
-  h2 { font-size: 24px; color: #2c3e50; text-align: center; margin-bottom: 8px; }
+  border-radius: 24px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08);
+  padding: 48px 40px;
 }
-.auth-desc {
+.auth-header {
   text-align: center;
-  color: #909399;
-  font-size: 14px;
-  margin-bottom: 32px;
+  margin-bottom: 36px;
+  .auth-icon {
+    width: 72px;
+    height: 72px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    color: #fff;
+  }
+  h2 {
+    font-size: 26px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 8px;
+  }
+  p {
+    font-size: 15px;
+    color: #64748b;
+  }
 }
-.auth-btn {
+.submit-btn {
   width: 100%;
-  height: 44px;
+  height: 48px;
   font-size: 16px;
-  border-radius: 8px;
+  font-weight: 600;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  &:hover {
+    opacity: 0.9;
+  }
 }
 .auth-footer {
   text-align: center;
-  margin-top: 20px;
+  margin-top: 24px;
   font-size: 14px;
-  color: #909399;
-  a { color: #2d8cf0; margin-left: 4px; &:hover { text-decoration: underline; } }
+  color: #64748b;
+  a {
+    color: #667eea;
+    font-weight: 600;
+    margin-left: 4px;
+    &:hover { text-decoration: underline; }
+  }
+}
+:deep(.el-input__wrapper) {
+  border-radius: 12px;
+  padding: 4px 16px;
 }
 </style>

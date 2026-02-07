@@ -20,7 +20,7 @@
         </el-menu-item>
         <el-menu-item index="/article">
           <el-icon><Document /></el-icon>
-          <template #title>文章管理</template>
+          <template #title>文章审核</template>
         </el-menu-item>
         <el-menu-item index="/category">
           <el-icon><FolderOpened /></el-icon>
