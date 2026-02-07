@@ -1,0 +1,57 @@
+-- 数据库由 docker-compose MYSQL_DATABASE 环境变量自动创建
+-- 字符集由 MySQL 启动参数 --character-set-server=utf8mb4 控制
+
+-- 用户表
+CREATE TABLE IF NOT EXISTS sys_user (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '用户ID',
+    username VARCHAR(50) NOT NULL UNIQUE COMMENT '用户名',
+    password VARCHAR(200) NOT NULL COMMENT '密码',
+    nickname VARCHAR(50) COMMENT '昵称',
+    email VARCHAR(100) COMMENT '邮箱',
+    avatar VARCHAR(500) COMMENT '头像URL',
+    role VARCHAR(20) NOT NULL DEFAULT 'USER' COMMENT '角色: ADMIN/USER',
+    status TINYINT NOT NULL DEFAULT 1 COMMENT '状态: 1启用 0禁用',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
+
+-- 分类表
+CREATE TABLE IF NOT EXISTS category (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '分类ID',
+    name VARCHAR(50) NOT NULL COMMENT '分类名称',
+    description VARCHAR(200) COMMENT '分类描述',
+    sort_order INT NOT NULL DEFAULT 0 COMMENT '排序',
+    status TINYINT NOT NULL DEFAULT 1 COMMENT '状态: 1启用 0禁用',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='分类表';
+
+-- 文章表
+CREATE TABLE IF NOT EXISTS article (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '文章ID',
+    title VARCHAR(200) NOT NULL COMMENT '标题',
+    summary VARCHAR(500) COMMENT '摘要',
+    content TEXT NOT NULL COMMENT '内容',
+    cover_image VARCHAR(500) COMMENT '封面图URL',
+    category_id BIGINT COMMENT '分类ID',
+    user_id BIGINT NOT NULL COMMENT '作者ID',
+    status VARCHAR(20) NOT NULL DEFAULT 'DRAFT' COMMENT '状态: DRAFT/PUBLISHED',
+    view_count INT NOT NULL DEFAULT 0 COMMENT '浏览量',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_category_id (category_id),
+    INDEX idx_user_id (user_id),
+    INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='文章表';
+
+-- 操作日志表
+CREATE TABLE IF NOT EXISTS operation_log (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '日志ID',
+    user_id BIGINT COMMENT '操作用户ID',
+    username VARCHAR(50) COMMENT '操作用户名',
+    operation VARCHAR(200) COMMENT '操作描述',
+    method VARCHAR(200) COMMENT '方法名',
+    params TEXT COMMENT '请求参数',
+    ip VARCHAR(50) COMMENT 'IP地址',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='操作日志表';
