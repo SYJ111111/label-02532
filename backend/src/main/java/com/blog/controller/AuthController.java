@@ -10,6 +10,7 @@ import com.blog.entity.User;
 import com.blog.exception.BusinessException;
 import com.blog.service.UserService;
 import com.blog.util.JwtUtil;
+import com.blog.util.PasswordValidatorUtil;
 import com.blog.vo.UserVO;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -69,6 +70,9 @@ public class AuthController {
             throw new BusinessException("昵称已存在");
         }
         String rawPassword = new String(Base64.getDecoder().decode(dto.getPassword()));
+        if (!PasswordValidatorUtil.isValid(rawPassword)) {
+            throw new BusinessException(PasswordValidatorUtil.getPasswordRequirement());
+        }
         User user = new User();
         user.setUsername(dto.getUsername());
         user.setPassword(passwordEncoder.encode(rawPassword));
