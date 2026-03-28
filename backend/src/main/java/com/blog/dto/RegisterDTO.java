@@ -1,5 +1,6 @@
 package com.blog.dto;
 
+import com.blog.validation.PasswordStrength;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -12,6 +13,7 @@ public class RegisterDTO {
     private String username;
     @NotBlank(message = "密码不能为空")
     @Size(min = 6, max = 20, message = "密码长度为6-20个字符")
+    @PasswordStrength(message = "密码必须包含大小写字母、数字和特殊字符")
     private String password;
     @NotBlank(message = "昵称不能为空")
     @Size(min = 2, max = 30, message = "昵称长度为2-30个字符")
