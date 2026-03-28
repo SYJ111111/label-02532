@@ -19,7 +19,7 @@
           <el-input v-model="form.email" placeholder="邮箱（选填）" prefix-icon="Message" />
         </el-form-item>
         <el-form-item prop="password">
-          <el-input v-model="form.password" type="password" placeholder="密码" prefix-icon="Lock" show-password />
+          <el-input v-model="form.password" type="password" placeholder="密码（8-20个字符，包含大小写和特殊字符）" prefix-icon="Lock" show-password />
         </el-form-item>
         <el-form-item prop="confirmPassword">
           <el-input v-model="form.confirmPassword" type="password" placeholder="确认密码" prefix-icon="Lock" show-password />
@@ -57,6 +57,17 @@ const validateConfirm = (rule, value, callback) => {
   }
 }
 
+const validatePassword = (rule, value, callback) => {
+  const hasLowerCase = /[a-z]/.test(value)
+  const hasUpperCase = /[A-Z]/.test(value)
+  const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value)
+  if (!hasLowerCase || !hasUpperCase || !hasSpecialChar) {
+    callback(new Error('密码必须包含至少一个小写字母、一个大写字母、一个特殊字符'))
+  } else {
+    callback()
+  }
+}
+
 const rules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
@@ -69,7 +80,8 @@ const rules = {
   email: [{ type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, max: 20, message: '密码长度为6-20个字符', trigger: 'blur' }
+    { min: 8, max: 20, message: '密码长度为8-20个字符', trigger: 'blur' },
+    { validator: validatePassword, trigger: 'blur' }
   ],
   confirmPassword: [
     { required: true, message: '请确认密码', trigger: 'blur' },
